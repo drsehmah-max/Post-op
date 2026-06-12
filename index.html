@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Smart Discharge — Ortho ACH</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS — Surgical Precision theme
+   Deep navy-teal + bone white + surgical steel
+   Signature: X-ray film strip header on doctor page
+═══════════════════════════════════════ */
+:root {
+  /* Palette */
+  --navy:   #0b1f2e;
+  --navy2:  #122436;
+  --teal:   #0a8a7a;
+  --teal2:  #0cb8a0;
+  --teal3:  #d4f5f0;
+  --steel:  #4a7c8a;
+  --bone:   #f5f2ec;
+  --bone2:  #ede9e1;
+  --white:  #ffffff;
+  --ink:    #0d1f1f;
+  --muted:  #5a7a80;
+  --border: #ccdfe0;
+  --red:    #c0392b;
+  --redp:   #fff2f0;
+  --amber:  #c47d00;
+  --ambp:   #fff8ee;
+  --green:  #0d7a50;
+  --grenp:  #edfff5;
+  /* Type scale */
+  --sz-xs: 11px; --sz-sm: 13px; --sz-md: 15px; --sz-lg: 18px; --sz-xl: 22px; --sz-2xl: 28px;
+  /* Radius */
+  --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-xl: 28px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent }
+html { scroll-behavior:smooth }
+body { font-family:'Tajawal',Arial,sans-serif; background:var(--bone); color:var(--ink); font-size:var(--sz-md); line-height:1.65; -webkit-font-smoothing:antialiased; min-height:100dvh }
+
+/* ═══ DOCTOR / PATIENT VIEWS ═══ */
+.view { display:none }
+.view.on { display:block }
+
+/* ══════════════════════════════════════════════
+   DOCTOR PAGE
+══════════════════════════════════════════════ */
+.doc-page {
+  min-height:100dvh;
+  background: var(--navy);
+  position:relative; overflow:hidden;
+}
+
+/* X-ray film strip atmosphere */
+.doc-page::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(10,138,122,.25) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(10,184,160,.12) 0%, transparent 50%);
+  pointer-events:none; z-index:0;
+}
+
+/* Bone grid pattern */
+.doc-page::after {
+  content:'';
+  position:fixed; inset:0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events:none; z-index:0;
+}
+
+.doc-inner { position:relative; z-index:1; max-width:520px; margin:0 auto; padding:28px 18px 50px }
+
+/* Doc header — film strip aesthetic */
+.doc-header {
+  text-align:center; margin-bottom:32px;
+}
+.doc-logo {
+  display:inline-flex; align-items:center; gap:12px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+  padding:10px 20px; border-radius:40px; margin-bottom:20px;
+}
+.doc-logo-icon {
+  width:36px; height:36px;
+  background:linear-gradient(135deg,var(--teal),var(--teal2));
+  border-radius:10px; display:flex; align-items:center; justify-content:center;
+  font-size:18px;
+}
+.doc-logo-text { color:rgba(255,255,255,.9); font-size:13px; font-weight:700; }
+.doc-logo-text span { display:block; color:rgba(255,255,255,.45); font-size:10px; font-weight:400 }
+
+.doc-title { color:#fff; font-size:var(--sz-xl); font-weight:900; letter-spacing:-.4px; line-height:1.2; margin-bottom:6px }
+.doc-subtitle { color:rgba(255,255,255,.5); font-size:var(--sz-sm) }
+
+/* Step indicator */
+.steps { display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:28px }
+.step-dot {
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+.step-dot .sd {
+  width:32px; height:32px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800; transition:all .3s;
+}
+.step-dot .sl { font-size:10px; color:rgba(255,255,255,.4); white-space:nowrap }
+.step-dot.done .sd { background:var(--teal); color:#fff }
+.step-dot.active .sd { background:#fff; color:var(--navy) }
+.step-dot.idle .sd { background:rgba(255,255,255,.08); color:rgba(255,255,255,.3) }
+.step-line { width:40px; height:2px; background:rgba(255,255,255,.1); margin-bottom:14px }
+.step-line.done { background:var(--teal) }
+
+/* Card */
+.doc-card {
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:var(--r-xl); padding:24px; margin-bottom:16px;
+  backdrop-filter:blur(20px);
+}
+.doc-card-title {
+  color:rgba(255,255,255,.95); font-size:var(--sz-lg); font-weight:800;
+  margin-bottom:6px; display:flex; align-items:center; gap:8px;
+}
+.doc-card-sub { color:rgba(255,255,255,.4); font-size:var(--sz-sm); margin-bottom:18px }
+
+/* Op select */
+.op-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px }
+.op-btn {
+  background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.1);
+  border-radius:var(--r-md); padding:14px 12px; cursor:pointer;
+  transition:all .2s; text-align:center; color:rgba(255,255,255,.7);
+  font-family:'Tajawal',Arial,sans-serif; font-size:13px; font-weight:600;
+}
+.op-btn:hover { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.2) }
+.op-btn.sel { background:rgba(10,138,122,.25); border-color:var(--teal); color:#fff }
+.op-btn .ob-icon { font-size:22px; display:block; margin-bottom:6px }
+.op-btn .ob-en { font-size:10px; opacity:.5; display:block; margin-top:2px }
+
+/* Medication inputs */
+.med-form { display:flex; flex-direction:column; gap:10px }
+.med-row {
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);
+  border-radius:var(--r-md); padding:14px; display:flex; gap:10px; align-items:flex-start;
+}
+.med-num {
+  width:26px; height:26px; background:var(--teal); border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800; color:#fff; flex-shrink:0;
+}
+.med-inputs { flex:1; display:grid; grid-template-columns:1.4fr .8fr .7fr; gap:8px }
+.med-inputs label { display:block; font-size:10px; color:rgba(255,255,255,.4); margin-bottom:3px; letter-spacing:.3px; text-transform:uppercase }
+.med-inp {
+  width:100%; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15);
+  border-radius:8px; padding:7px 10px; color:#fff; font-family:'Tajawal',Arial,sans-serif;
+  font-size:13px; font-weight:600; outline:none; transition:border-color .2s;
+}
+.med-inp::placeholder { color:rgba(255,255,255,.2); font-weight:400 }
+.med-inp:focus { border-color:var(--teal); background:rgba(10,138,122,.15) }
+.med-inp:disabled { opacity:.35; cursor:not-allowed }
+
+/* Doctor notes */
+.note-inp {
+  width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+  border-radius:var(--r-md); padding:12px 14px; color:#fff; font-family:'Tajawal',Arial,sans-serif;
+  font-size:13px; resize:none; outline:none; min-height:70px;
+  transition:border-color .2s;
+}
+.note-inp::placeholder { color:rgba(255,255,255,.2) }
+.note-inp:focus { border-color:var(--teal) }
+
+/* QR preview area */
+.qr-preview {
+  background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.1);
+  border-radius:var(--r-xl); padding:24px; text-align:center; margin-bottom:16px;
+}
+.qr-preview .qr-box {
+  width:160px; height:160px; background:#fff; border-radius:var(--r-md);
+  margin:0 auto 16px; display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+.qr-preview .qr-box img,
+.qr-preview .qr-box canvas { width:100%; height:100%; display:block }
+.qr-label { color:rgba(255,255,255,.6); font-size:var(--sz-sm); margin-bottom:12px; line-height:1.5 }
+.qr-url { color:var(--teal2); font-size:11px; font-family:'Inter',monospace; background:rgba(255,255,255,.06); padding:6px 12px; border-radius:8px; word-break:break-all; display:block; margin-bottom:0 }
+
+/* Big generate button */
+.btn-gen {
+  width:100%; padding:16px; background:linear-gradient(135deg,var(--teal),var(--teal2));
+  color:#fff; border:none; border-radius:var(--r-lg); font-family:'Tajawal',Arial,sans-serif;
+  font-size:16px; font-weight:800; cursor:pointer; letter-spacing:.2px;
+  transition:transform .2s, filter .2s; display:flex; align-items:center; justify-content:center; gap:8px;
+  margin-bottom:10px;
+}
+.btn-gen:hover { filter:brightness(1.08) }
+.btn-gen:active { transform:scale(.98) }
+.btn-preview {
+  width:100%; padding:13px; background:rgba(255,255,255,.08);
+  color:rgba(255,255,255,.8); border:1.5px solid rgba(255,255,255,.15);
+  border-radius:var(--r-lg); font-family:'Tajawal',Arial,sans-serif;
+  font-size:14px; font-weight:700; cursor:pointer; transition:all .2s;
+}
+.btn-preview:hover { background:rgba(255,255,255,.12) }
+
+/* NFC instruction strip */
+.nfc-strip {
+  background:rgba(10,184,160,.08); border:1px solid rgba(10,184,160,.2);
+  border-radius:var(--r-md); padding:14px 16px;
+  display:flex; align-items:center; gap:12px; margin-top:8px;
+}
+.nfc-strip .ni { font-size:28px }
+.nfc-strip p { color:rgba(255,255,255,.6); font-size:var(--sz-sm); line-height:1.5 }
+.nfc-strip strong { color:rgba(255,255,255,.9) }
+
+
+/* ══════════════════════════════════════════════
+   PATIENT PAGE
+══════════════════════════════════════════════ */
+.pat-page { background:var(--bone); min-height:100dvh }
+
+/* Sticky header */
+.pat-hdr {
+  background:var(--navy);
+  position:sticky; top:0; z-index:200;
+}
+.pat-hdr-inner {
+  max-width:600px; margin:0 auto;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:11px 16px;
+}
+.pat-logo { display:flex; align-items:center; gap:9px }
+.pat-logo-icon {
+  width:34px; height:34px; background:linear-gradient(135deg,var(--teal),var(--teal2));
+  border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:17px;
+}
+.pat-logo-text strong { color:#fff; font-size:12px; font-weight:800; display:block }
+.pat-logo-text span { color:rgba(255,255,255,.5); font-size:10px }
+.pat-op-chip {
+  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2);
+  color:#fff; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:700;
+}
+
+/* Tabs */
+.pat-tabs {
+  background:var(--navy2);
+  padding:0 16px 11px;
+  position:sticky; top:56px; z-index:199;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.pat-tabs-inner {
+  max-width:600px; margin:0 auto;
+  display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+}
+.pat-tabs-inner::-webkit-scrollbar { display:none }
+.ptab {
+  flex-shrink:0; background:rgba(255,255,255,.08); border:none; border-radius:20px;
+  color:rgba(255,255,255,.6); padding:7px 15px; font-size:12px; font-weight:600;
+  font-family:'Tajawal',Arial,sans-serif; cursor:pointer; white-space:nowrap; transition:all .18s;
+}
+.ptab.on { background:var(--teal); color:#fff }
+
+/* Pages */
+.ppg { display:none }.ppg.on { display:block }
+.pwrap { max-width:600px; margin:0 auto; padding:16px 14px 50px }
+
+/* Section hero */
+.shero { text-align:center; padding:8px 0 22px }
+.shero-icon {
+  width:70px; height:70px; border-radius:20px; margin:0 auto 12px;
+  overflow:hidden; box-shadow:0 4px 20px rgba(10,138,122,.2);
+  background:var(--bone2); display:flex; align-items:center; justify-content:center;
+}
+.shero-icon img { width:100%; height:100%; object-fit:cover }
+.shero-icon.icon-placeholder { font-size:36px }
+.shero h2 { font-size:var(--sz-xl); font-weight:900; color:var(--navy); letter-spacing:-.3px }
+.shero p { font-size:var(--sz-sm); color:var(--muted); margin-top:3px }
+
+/* Card */
+.pcard {
+  background:var(--white); border-radius:var(--r-lg); overflow:hidden;
+  margin-bottom:14px;
+  border:1px solid var(--border);
+  box-shadow:0 2px 0 var(--bone2), 0 4px 24px rgba(11,31,46,.07);
+}
+.pc-head {
+  display:flex; align-items:center; gap:10px;
+  padding:13px 16px 11px;
+  border-bottom:1.5px solid var(--bone2);
+  background:linear-gradient(180deg,var(--white),var(--bone));
+}
+.pc-icon {
+  width:36px; height:36px; border-radius:10px; overflow:hidden; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; background:var(--bone2);
+}
+.pc-icon img { width:100%; height:100%; object-fit:cover }
+.pc-icon.ico-t { background:linear-gradient(135deg,#054040,#0aA0A0) }
+.pc-icon.ico-r { background:linear-gradient(135deg,#7a1710,#c0392b) }
+.pc-icon.ico-a { background:linear-gradient(135deg,#7a4400,#d4820a) }
+.pc-icon.ico-g { background:linear-gradient(135deg,#0f4f2e,#27ae60) }
+.pc-icon.ico-n { background:var(--navy) }
+.pc-icon span { font-size:18px; color:#fff }
+.pc-title { font-size:14px; font-weight:800; color:var(--navy); line-height:1.2 }
+.pc-sub { font-size:11px; color:var(--muted) }
+.pcb { padding:14px 16px }
+
+/* Rows */
+.rows { display:flex; flex-direction:column }
+.row {
+  display:flex; align-items:flex-start; gap:9px;
+  padding:8px 0; border-bottom:1px solid var(--bone2);
+  font-size:14px; line-height:1.6;
+}
+.row:last-child { border-bottom:none; padding-bottom:0 }
+.bul { width:7px; height:7px; border-radius:50%; background:var(--teal); flex-shrink:0; margin-top:8px }
+.bul.r { background:var(--red) }.bul.a { background:var(--amber) }.bul.g { background:var(--green) }
+.row strong { color:var(--navy); font-weight:700 }
+
+/* Callout */
+.cbox {
+  border-radius:var(--r-md); padding:13px 14px 13px 16px;
+  margin-bottom:12px; display:flex; gap:11px; align-items:flex-start;
+}
+.cbox:last-child { margin-bottom:0 }
+.cbox.cr { background:var(--redp);  border-right:4px solid var(--red)  }
+.cbox.ca { background:var(--ambp);  border-right:4px solid var(--amber) }
+.cbox.cg { background:var(--grenp); border-right:4px solid var(--green) }
+.cbox.ct { background:var(--teal3); border-right:4px solid var(--teal)  }
+.cbox-ic { font-size:22px; flex-shrink:0; margin-top:2px }
+.cbox-bd h4 { font-size:14px; font-weight:800; margin-bottom:5px }
+.cbox.cr .cbox-bd h4 { color:var(--red) }
+.cbox.ca .cbox-bd h4 { color:var(--amber) }
+.cbox.cg .cbox-bd h4 { color:var(--green) }
+.cbox.ct .cbox-bd h4 { color:var(--teal) }
+.cbox-bd ul { padding-right:14px; font-size:13px; line-height:1.85; color:var(--ink) }
+.cbox-bd p  { font-size:13px; color:var(--ink); line-height:1.7 }
+
+/* Image grid for symptoms / exercises */
+.img-grid { display:grid; gap:10px; margin-bottom:14px }
+.img-grid.c3 { grid-template-columns:repeat(3,1fr) }
+.img-grid.c2 { grid-template-columns:repeat(2,1fr) }
+.img-card { border-radius:var(--r-md); overflow:hidden; border:1.5px solid var(--border); background:var(--white) }
+.img-card img { width:100%; height:110px; object-fit:cover; display:block }
+.img-card .ic-cap { padding:8px 10px; font-size:12px; font-weight:700; color:var(--navy); text-align:center }
+.img-card .ic-cap span { display:block; font-size:10px; font-weight:400; color:var(--muted); margin-top:1px }
+
+/* Timeline */
+.tl { display:flex; flex-direction:column }
+.tli { display:flex; gap:12px }
+.tls { display:flex; flex-direction:column; align-items:center; flex-shrink:0 }
+.tln {
+  width:32px; height:32px; border-radius:50%;
+  background:linear-gradient(135deg,var(--navy),var(--teal));
+  color:#fff; font-size:12px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(11,31,46,.2); flex-shrink:0;
+}
+.tlv { width:2px; flex:1; background:var(--border); margin:3px 0; min-height:14px }
+.tlbd { flex:1; padding-bottom:14px }
+.tli:last-child .tlbd { padding-bottom:0 }
+.tlw { font-size:10px; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px }
+.tlbox { background:var(--bone); border:1.5px solid var(--border); border-radius:var(--r-sm); padding:10px 12px; font-size:13px; line-height:1.6 }
+.ph { display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:700; margin-left:4px; margin-bottom:3px }
+.ph0 { background:#ffeeed; color:var(--red) }
+.ph1 { background:#fff3d0; color:var(--amber) }
+.ph2 { background:#e0f5ee; color:var(--green) }
+
+/* Video link */
+.vlink {
+  display:flex; align-items:center; gap:11px;
+  background:linear-gradient(135deg,var(--navy),#163548);
+  border-radius:var(--r-md); padding:13px 14px; margin-top:12px;
+  text-decoration:none; color:#fff; transition:filter .2s;
+  border:1px solid rgba(255,255,255,.08);
+}
+.vlink:active { filter:brightness(.88) }
+.vplay {
+  width:40px; height:40px; border-radius:50%;
+  background:var(--teal); display:flex; align-items:center; justify-content:center;
+  font-size:16px; flex-shrink:0;
+}
+.vtxt strong { display:block; font-size:13px; font-weight:700; line-height:1.3 }
+.vtxt span { font-size:11px; opacity:.55; display:block; margin-top:1px }
+.varr { margin-right:auto; opacity:.35; font-size:18px }
+
+/* Exercise step header */
+.ex-hdr { display:flex; align-items:center; gap:10px; margin-bottom:12px }
+.ex-num {
+  width:30px; height:30px; border-radius:50%; background:var(--navy);
+  color:#fff; font-size:13px; font-weight:800;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.ex-pills { display:flex; gap:7px; flex-wrap:wrap; margin:9px 0 12px }
+.ep { background:var(--teal3); color:var(--teal); padding:4px 11px; border-radius:20px; font-size:12px; font-weight:700 }
+
+/* Prescription display */
+.rx-display {
+  display:flex; flex-direction:column; gap:10px;
+}
+.rx-item {
+  background:var(--bone); border:1.5px solid var(--border); border-radius:var(--r-md);
+  padding:13px 14px; display:flex; gap:12px; align-items:flex-start;
+}
+.rx-item .ri-num {
+  width:28px; height:28px; background:linear-gradient(135deg,var(--navy),var(--teal));
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:12px; font-weight:800; flex-shrink:0;
+}
+.rx-item .ri-body { flex:1 }
+.rx-item .ri-name { font-size:15px; font-weight:800; color:var(--navy) }
+.rx-item .ri-dose { font-size:13px; font-weight:700; color:var(--teal); margin-top:2px }
+.rx-item .ri-dur  { font-size:12px; color:var(--muted); margin-top:1px }
+.rx-empty { text-align:center; padding:24px; color:var(--muted); font-size:13px }
+
+/* Follow-up grid */
+.fu3 { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px }
+.fuc {
+  background:var(--white); border-radius:var(--r-md); border:1.5px solid var(--border);
+  padding:14px 10px; text-align:center; box-shadow:0 2px 0 var(--bone2);
+}
+.fun { font-size:28px; font-weight:900; color:var(--teal); line-height:1 }
+.fuu { font-size:11px; color:var(--muted); margin-bottom:4px }
+.ful { font-size:13px; font-weight:800; color:var(--navy) }
+.fus { font-size:11px; color:var(--muted); margin-top:3px; line-height:1.4 }
+
+/* Calendar section */
+.calsec { background:var(--teal3); border-radius:var(--r-md); padding:16px; border:1.5px solid #a8ddd8 }
+.calsec h4 { font-size:14px; font-weight:800; color:var(--navy); margin-bottom:12px }
+.cal-date-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap }
+.cal-date-row label { font-size:13px; font-weight:700; color:var(--teal); white-space:nowrap }
+.cal-inp {
+  padding:9px 12px; border:2px solid var(--border); border-radius:var(--r-sm);
+  font-family:'Tajawal',Arial,sans-serif; font-size:14px; background:#fff; color:var(--ink);
+  flex:1; min-width:140px; outline:none; transition:border-color .2s;
+}
+.cal-inp:focus { border-color:var(--teal) }
+.calbtn {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:12px; border-radius:var(--r-sm); border:none; cursor:pointer;
+  font-family:'Tajawal',Arial,sans-serif; font-size:14px; font-weight:700;
+  color:#fff; margin-bottom:8px; transition:filter .2s;
+}
+.calbtn:last-child { margin-bottom:0 }
+.calbtn:active { filter:brightness(.9) }
+.cb1 { background:var(--teal) }.cb2 { background:#0a6868 }.cb3 { background:#085252 }
+
+/* Emergency CTA */
+.er-cta {
+  display:flex; align-items:center; gap:13px;
+  background:linear-gradient(135deg,#8b1710,var(--red));
+  border-radius:var(--r-lg); padding:16px; text-decoration:none; color:#fff;
+  transition:filter .2s; border:none; width:100%; cursor:pointer; font-family:'Tajawal',Arial,sans-serif;
+}
+.er-cta:active { filter:brightness(.9) }
+.er-cta .ec-icon { font-size:28px; flex-shrink:0 }
+.er-cta .ec-text strong { display:block; font-size:16px; font-weight:800; line-height:1.2 }
+.er-cta .ec-text span { font-size:12px; opacity:.8 }
+.er-cta .ec-arr { margin-right:auto; font-size:20px; opacity:.5 }
+
+/* WA btn */
+.wa-btn {
+  display:flex; align-items:center; gap:13px;
+  background:linear-gradient(135deg,#1aa84e,#25d366);
+  border-radius:var(--r-lg); padding:15px 16px; text-decoration:none; color:#fff;
+  transition:filter .2s;
+}
+.wa-btn:active { filter:brightness(.9) }
+.map-btn {
+  display:flex; align-items:center; gap:13px;
+  background:linear-gradient(135deg,#1a3a7a,#2475bb);
+  border-radius:var(--r-lg); padding:15px 16px; text-decoration:none; color:#fff;
+  margin-top:10px; transition:filter .2s;
+}
+.map-btn:active { filter:brightness(.9) }
+.cb-icon { font-size:24px; width:34px; text-align:center; flex-shrink:0 }
+.cb-text strong { display:block; font-size:15px; font-weight:800; line-height:1.2 }
+.cb-text span { font-size:12px; opacity:.8 }
+.cb-arr { margin-right:auto; font-size:18px; opacity:.4 }
+
+/* Doctor notes display */
+.doc-note-display {
+  background:linear-gradient(135deg,var(--navy),#163548);
+  border-radius:var(--r-md); padding:14px 16px; color:#fff;
+  border:1px solid rgba(255,255,255,.1);
+}
+.dnd-label { font-size:11px; opacity:.5; text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px }
+.dnd-text { font-size:14px; line-height:1.7; color:rgba(255,255,255,.9) }
+
+/* Footer */
+.pat-footer {
+  text-align:center; padding:24px 16px 40px;
+  color:var(--muted); font-size:12px; line-height:1.9;
+}
+.pat-footer strong { color:var(--teal) }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:22px; left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:var(--navy); color:#fff; padding:11px 22px;
+  border-radius:30px; font-size:14px; font-weight:600;
+  box-shadow:0 6px 24px rgba(0,0,0,.25); z-index:999;
+  opacity:0; pointer-events:none; transition:all .25s; white-space:nowrap;
+}
+.toast.on { opacity:1; transform:translateX(-50%) translateY(0) }
+
+@media(max-width:370px){
+  .op-grid { grid-template-columns:1fr 1fr }
+  .med-inputs { grid-template-columns:1fr 1fr }
+  .fu3 { grid-template-columns:1fr 1fr }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════
+     DOCTOR VIEW — QR Generator
+════════════════════════════════ -->
+<div class="view on" id="v-doctor">
+<div class="doc-page">
+<div class="doc-inner">
+
+  <!-- Header -->
+  <div class="doc-header">
+    <div class="doc-logo">
+      <div class="doc-logo-icon">🦴</div>
+      <div class="doc-logo-text">
+        Ortho ACH
+        <span>مستشفى عسير المركزي</span>
+      </div>
+    </div>
+    <div class="doc-title">Smart Discharge System</div>
+    <div class="doc-subtitle">نظام الخروج الذكي — قسم العظام والمفاصل</div>
+  </div>
+
+  <!-- Step indicator -->
+  <div class="steps" id="step-ind">
+    <div class="step-dot active" id="sd1"><div class="sd">١</div><div class="sl">العملية</div></div>
+    <div class="step-line" id="sl12"></div>
+    <div class="step-dot idle" id="sd2"><div class="sd">٢</div><div class="sl">الأدوية</div></div>
+    <div class="step-line" id="sl23"></div>
+    <div class="step-dot idle" id="sd3"><div class="sd">٣</div><div class="sl">QR Code</div></div>
+  </div>
+
+  <!-- Step 1: Operation type -->
+  <div class="doc-card" id="step1">
+    <div class="doc-card-title">🏥 نوع العملية</div>
+    <div class="doc-card-sub">اختر نوع العملية للمريض</div>
+    <div class="op-grid">
+      <button class="op-btn sel" onclick="selOp(this,'Ankle ORIF','تثبيت كسر الكاحل')">
+        <span class="ob-icon">🦶</span>Ankle ORIF<span class="ob-en">تثبيت كسر الكاحل</span>
+      </button>
+      <button class="op-btn" onclick="selOp(this,'PFN','مسمار عنق الفخذ')">
+        <span class="ob-icon">🦴</span>PFN<span class="ob-en">مسمار عنق الفخذ</span>
+      </button>
+      <button class="op-btn" onclick="selOp(this,'DHS','تثبيت مدق الفخذ')">
+        <span class="ob-icon">🔩</span>DHS<span class="ob-en">تثبيت مدق الفخذ</span>
+      </button>
+      <button class="op-btn" onclick="selOp(this,'TKA','استبدال الركبة')">
+        <span class="ob-icon">🦵</span>TKA<span class="ob-en">استبدال الركبة</span>
+      </button>
+      <button class="op-btn" onclick="selOp(this,'THA','استبدال الورك')">
+        <span class="ob-icon">🫙</span>THA<span class="ob-en">استبدال الورك</span>
+      </button>
+      <button class="op-btn" onclick="selOp(this,'Tibia IMN','مسمار الساق')">
+        <span class="ob-icon">📏</span>Tibia IMN<span class="ob-en">مسمار الساق</span>
+      </button>
+    </div>
+    <button class="btn-gen" onclick="nextStep(2)" style="margin-top:14px">
+      التالي — الأدوية ←
+    </button>
+  </div>
+
+  <!-- Step 2: Medications -->
+  <div class="doc-card" id="step2" style="display:none">
+    <div class="doc-card-title">💊 الأدوية الموصوفة</div>
+    <div class="doc-card-sub">أدخل اسم الدواء والجرعة والمدة — اتركها فارغة إذا لا تنطبق</div>
+    <div class="med-form">
+      <div class="med-row">
+        <div class="med-num">١</div>
+        <div class="med-inputs">
+          <div><label>اسم الدواء</label><input class="med-inp" id="m0n" type="text" placeholder="مثال: Rivaroxaban"></div>
+          <div><label>الجرعة</label><input class="med-inp" id="m0d" type="text" placeholder="10mg"></div>
+          <div><label>المدة</label><input class="med-inp" id="m0t" type="text" placeholder="14 يوم"></div>
+        </div>
+      </div>
+      <div class="med-row">
+        <div class="med-num">٢</div>
+        <div class="med-inputs">
+          <div><label>اسم الدواء</label><input class="med-inp" id="m1n" type="text" placeholder="..."></div>
+          <div><label>الجرعة</label><input class="med-inp" id="m1d" type="text" placeholder="..."></div>
+          <div><label>المدة</label><input class="med-inp" id="m1t" type="text" placeholder="..."></div>
+        </div>
+      </div>
+      <div class="med-row">
+        <div class="med-num">٣</div>
+        <div class="med-inputs">
+          <div><label>اسم الدواء</label><input class="med-inp" id="m2n" type="text" placeholder="..."></div>
+          <div><label>الجرعة</label><input class="med-inp" id="m2d" type="text" placeholder="..."></div>
+          <div><label>المدة</label><input class="med-inp" id="m2t" type="text" placeholder="..."></div>
+        </div>
+      </div>
+      <div class="med-row">
+        <div class="med-num">٤</div>
+        <div class="med-inputs">
+          <div><label>اسم الدواء</label><input class="med-inp" id="m3n" type="text" placeholder="..."></div>
+          <div><label>الجرعة</label><input class="med-inp" id="m3d" type="text" placeholder="..."></div>
+          <div><label>المدة</label><input class="med-inp" id="m3t" type="text" placeholder="..."></div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <label style="color:rgba(255,255,255,.5);font-size:11px;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:6px">ملاحظة للمريض (اختياري)</label>
+      <textarea class="note-inp" id="doc-note" placeholder="مثال: تجنب المشي بدون العكازات حتى الزيارة القادمة..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn-preview" onclick="nextStep(1)" style="flex:.4">← رجوع</button>
+      <button class="btn-gen" onclick="nextStep(3)" style="flex:1">توليد QR ←</button>
+    </div>
+  </div>
+
+  <!-- Step 3: QR Code -->
+  <div class="doc-card" id="step3" style="display:none">
+    <div class="doc-card-title">✅ QR Code جاهز</div>
+    <div class="doc-card-sub">أعطِ هذا الكود للمريض أو ضعه على NFC tag</div>
+    <div class="qr-preview">
+      <div class="qr-box" id="qr-box">
+        <div style="text-align:center;color:#999;font-size:12px;padding:10px">جاري التوليد...</div>
+      </div>
+      <div class="qr-label" id="qr-label">امسح الكود لفتح تعليمات <span id="qr-op-name">Ankle ORIF</span></div>
+      <span class="qr-url" id="qr-url">—</span>
+    </div>
+    <button class="btn-gen" onclick="openPatient()">👁️ معاينة صفحة المريض</button>
+    <div style="margin-top:10px">
+      <button class="btn-preview" onclick="nextStep(1)">← ابدأ من جديد</button>
+    </div>
+    <div class="nfc-strip" style="margin-top:12px">
+      <div class="ni">📡</div>
+      <p>اكتب الرابط أعلاه على <strong>NFC tag</strong> بتطبيق NFC Tools — الصق الـ tag على ورقة الخروج</p>
+    </div>
+  </div>
+
+</div><!-- /doc-inner -->
+</div><!-- /doc-page -->
+</div><!-- /v-doctor -->
+
+
+<!-- ════════════════════════════════
+     PATIENT VIEW
+════════════════════════════════ -->
+<div class="view" id="v-patient">
+<div class="pat-page">
+
+  <!-- Header -->
+  <div class="pat-hdr">
+    <div class="pat-hdr-inner">
+      <div class="pat-logo">
+        <div class="pat-logo-icon">🦴</div>
+        <div class="pat-logo-text">
+          <strong>مستشفى عسير المركزي</strong>
+          <span>قسم جراحة العظام</span>
+        </div>
+      </div>
+      <div class="pat-op-chip" id="p-op-chip">Ankle ORIF</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="pat-tabs">
+    <div class="pat-tabs-inner">
+      <button class="ptab on" onclick="ptab('wound',this)">🩹 الجرح</button>
+      <button class="ptab"   onclick="ptab('load',this)" >⚖️ التحميل</button>
+      <button class="ptab"   onclick="ptab('flags',this)">🚨 تحذيرات</button>
+      <button class="ptab"   onclick="ptab('ex',this)"   >💪 تمارين</button>
+      <button class="ptab"   onclick="ptab('meds',this)" >💊 أدوية</button>
+      <button class="ptab"   onclick="ptab('fu',this)"   >📅 مواعيد</button>
+      <button class="ptab"   onclick="ptab('er',this)"   >🚨 طوارئ</button>
+    </div>
+  </div>
+
+  <!-- ── PAGE: WOUND ── -->
+  <div class="ppg on" id="pp-wound"><div class="pwrap">
+    <div class="shero">
+      <div class="shero-icon">
+        <img src="https://images.unsplash.com/photo-1584515933487-779824d29309?w=140&h=140&fit=crop&q=80" alt="wound care" onerror="this.parentNode.innerHTML='🩹'">
+      </div>
+      <h2>رعاية الجرح</h2><p>Wound Care — اتبع هذه التعليمات يومياً</p>
+    </div>
+
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-t"><span>📋</span></div>
+        <div><div class="pc-title">التعليمات اليومية</div><div class="pc-sub">Daily Care Instructions</div></div>
+      </div>
+      <div class="pcb rows">
+        <div class="row"><div class="bul"></div><div>لا تفك الضمادة حتى <strong>موعد المتابعة الأول</strong> بعد أسبوعين — إلا إذا طُلب منك</div></div>
+        <div class="row"><div class="bul"></div><div>حافظ على الجرح <strong>جافًا تمامًا</strong> — ضع كيسًا بلاستيكيًا عند الاستحمام</div></div>
+        <div class="row"><div class="bul"></div><div>إزالة الغرز في الزيارة الأولى <strong>(12–14 يوماً)</strong> من العملية</div></div>
+        <div class="row"><div class="bul"></div><div>تورم وتغيّر لون الكاحل <strong>طبيعي</strong> في الأسابيع الأولى</div></div>
+        <div class="row"><div class="bul"></div><div>كيس ثلج مغلّف بقماش · <strong>20 دقيقة</strong> كل 3 ساعات</div></div>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-t"><span>👁️</span></div>
+        <div><div class="pc-title">علامات التحذير على الجرح</div><div class="pc-sub">Know what to watch for</div></div>
+      </div>
+      <div class="pcb">
+        <div class="img-grid c2" style="margin-bottom:14px">
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=300&h=200&fit=crop&q=80" alt="normal healing" onerror="this.style.display='none'">
+            <div class="ic-cap">جرح يلتئم طبيعياً<span>تورم خفيف — طبيعي ✓</span></div>
+          </div>
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=300&h=200&fit=crop&q=80" alt="infection signs" onerror="this.style.display='none'">
+            <div class="ic-cap">علامات تستدعي الانتباه<span>احمرار ينتشر — اذهب للطوارئ</span></div>
+          </div>
+        </div>
+        <div class="cbox cr">
+          <div class="cbox-ic">🚨</div>
+          <div class="cbox-bd">
+            <h4>اذهب لطوارئ ACH فوراً إذا:</h4>
+            <ul>
+              <li>احمرار يمتد خارج منطقة الجرح</li>
+              <li>خروج سائل أصفر أو برائحة</li>
+              <li>حرارة الجسم أكثر من <strong>38.5°</strong></li>
+              <li>ألم يزيد بدلاً من أن يتحسن</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- ── PAGE: WEIGHT LOADING ── -->
+  <div class="ppg" id="pp-load"><div class="pwrap">
+    <div class="shero">
+      <div class="shero-icon">
+        <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=140&h=140&fit=crop&q=80" alt="rehabilitation" onerror="this.parentNode.innerHTML='⚖️'">
+      </div>
+      <h2>التحميل على القدم</h2><p>Weight Bearing Protocol</p>
+    </div>
+
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-a"><span>📅</span></div>
+        <div><div class="pc-title">الجدول الزمني للتحميل</div><div class="pc-sub">Step-by-step recovery</div></div>
+      </div>
+      <div class="pcb">
+        <div class="tl">
+          <div class="tli">
+            <div class="tls"><div class="tln">١</div><div class="tlv"></div></div>
+            <div class="tlbd"><div class="tlw">الأسبوع 1 – 2</div>
+            <div class="tlbox"><span class="ph ph0">NWB — بدون تحميل</span><br>القدم في الهواء تماماً · العكازات تحمل كل وزنك · الجبيرة مستمرة</div></div>
+          </div>
+          <div class="tli">
+            <div class="tls"><div class="tln">٢</div><div class="tlv"></div></div>
+            <div class="tlbd"><div class="tlw">الأسبوع 3 – 4</div>
+            <div class="tlbox"><span class="ph ph1">PWB — تحميل جزئي</span><br>10–20 كيلو فقط مع الواكر · داخل الحذاء الطبي فقط</div></div>
+          </div>
+          <div class="tli">
+            <div class="tls"><div class="tln">٣</div><div class="tlv"></div></div>
+            <div class="tlbd"><div class="tlw">الأسبوع 5 – 6</div>
+            <div class="tlbox"><span class="ph ph1">WBAT — حسب التحمل</span><br>ابدأ تضع وزنك تدريجياً · الحذاء الطبي لا يزال ضرورياً</div></div>
+          </div>
+          <div class="tli">
+            <div class="tls"><div class="tln">٤</div></div>
+            <div class="tlbd"><div class="tlw">بعد 6 أسابيع</div>
+            <div class="tlbox"><span class="ph ph2">FWB — تحميل كامل</span><br>مشي طبيعي تدريجي · العودة للنشاط بتوجيه الطبيب</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-g"><span>💡</span></div>
+        <div><div class="pc-title">تقليل التورم</div><div class="pc-sub">Swelling Management Tips</div></div>
+      </div>
+      <div class="pcb rows">
+        <div class="row"><div class="bul g"></div><div><strong>ارفع قدمك دائماً</strong> فوق مستوى القلب — 3 وسادات عند الجلوس والنوم</div></div>
+        <div class="row"><div class="bul g"></div><div><strong>ثلج 20 دقيقة</strong> كل 3 ساعات — لا تضع الثلج مباشرة على الجلد</div></div>
+        <div class="row"><div class="bul g"></div><div>لا تدلّ قدمك لأسفل لفترات طويلة</div></div>
+        <div class="row"><div class="bul g"></div><div>ضع الوسادة <strong>تحت الكاحل</strong> وليس تحت الركبة عند النوم</div></div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- ── PAGE: RED FLAGS ── -->
+  <div class="ppg" id="pp-flags"><div class="pwrap">
+    <div class="shero">
+      <div class="shero-icon" style="background:#fff2f0">
+        <img src="https://images.unsplash.com/photo-1504439468489-c8920d796a29?w=140&h=140&fit=crop&q=80" alt="emergency" onerror="this.parentNode.innerHTML='🚨'">
+      </div>
+      <h2>علامات الخطر</h2><p>اذهب لطوارئ ACH فوراً عند أي منها</p>
+    </div>
+
+    <!-- Flag A -->
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-r"><span>🦵</span></div>
+        <div><div class="pc-title">تغيّر مفاجئ في الساق</div><div class="pc-sub">Sudden change — go to ER now</div></div>
+      </div>
+      <div class="pcb">
+        <div class="img-grid c3" style="margin-bottom:13px">
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1576671081837-49000212a370?w=200&h=150&fit=crop&q=80" alt="leg swelling" onerror="this.style.display='none'">
+            <div class="ic-cap">تورم مفاجئ<span>ساق واحدة فقط</span></div>
+          </div>
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=200&h=150&fit=crop&q=80" alt="redness" onerror="this.style.display='none'">
+            <div class="ic-cap">احمرار وحرارة<span>في الساق</span></div>
+          </div>
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=200&h=150&fit=crop&q=80" alt="pain" onerror="this.style.display='none'">
+            <div class="ic-cap">ألم عند اللمس<span>عضلة الربلة</span></div>
+          </div>
+        </div>
+        <div class="cbox cr">
+          <div class="cbox-ic">🏥</div>
+          <div class="cbox-bd"><h4>اذهب للطوارئ الآن</h4>
+          <ul><li>ساق واحدة انتفخت فجأة</li><li>الساق دافئة أو حمراء</li><li>ألم عند الضغط على عضلة الربلة</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flag B -->
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-r"><span>🫁</span></div>
+        <div><div class="pc-title">صعوبة في التنفس — الأخطر</div><div class="pc-sub">Call 911 immediately</div></div>
+      </div>
+      <div class="pcb">
+        <div class="img-grid c2" style="margin-bottom:13px">
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1559757175-5700dde675bc?w=300&h=180&fit=crop&q=80" alt="breathing" onerror="this.style.display='none'">
+            <div class="ic-cap">ضيق تنفس مفاجئ<span>بدون سبب واضح</span></div>
+          </div>
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?w=300&h=180&fit=crop&q=80" alt="chest pain" onerror="this.style.display='none'">
+            <div class="ic-cap">ألم في الصدر<span>يزيد عند الشهيق</span></div>
+          </div>
+        </div>
+        <div class="cbox cr">
+          <div class="cbox-ic">🚑</div>
+          <div class="cbox-bd"><h4>اتصل 911 فوراً</h4>
+          <ul><li>ضيق تنفس مفاجئ</li><li>ألم في الصدر عند التنفس</li><li>دوخة مع تسارع القلب</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flag C -->
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-r"><span>🩹</span></div>
+        <div><div class="pc-title">تغيّر في منطقة الجرح</div><div class="pc-sub">Wound infection signs</div></div>
+      </div>
+      <div class="pcb">
+        <div class="img-grid c3" style="margin-bottom:13px">
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1584515933487-779824d29309?w=200&h=150&fit=crop&q=80" alt="wound" onerror="this.style.display='none'">
+            <div class="ic-cap">احمرار ينتشر<span>خارج الجرح</span></div>
+          </div>
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1576671081803-ce0c02e14f6f?w=200&h=150&fit=crop&q=80" alt="discharge" onerror="this.style.display='none'">
+            <div class="ic-cap">إفراز أصفر<span>أو برائحة</span></div>
+          </div>
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=200&h=150&fit=crop&q=80" alt="thermometer" onerror="this.style.display='none'">
+            <div class="ic-cap">حرارة عالية<span>&gt; 38.5°</span></div>
+          </div>
+        </div>
+        <div class="cbox ca">
+          <div class="cbox-ic">🏥</div>
+          <div class="cbox-bd"><h4>اذهب للطوارئ — لا تنتظر</h4>
+          <p>لا تنتظر موعد العيادة — اذهب مباشرة لطوارئ ACH</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flag D -->
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-a"><span>🔕</span></div>
+        <div><div class="pc-title">مشكلة في الأصابع أو التثبيت</div><div class="pc-sub">Nerve or hardware issue</div></div>
+      </div>
+      <div class="pcb">
+        <div class="cbox cr">
+          <div class="cbox-ic">🏥</div>
+          <div class="cbox-bd"><h4>اذهب للطوارئ فوراً</h4>
+          <ul><li>عدم القدرة على تحريك أصابع القدم</li><li>تنميل أو إحساس بالبرودة الغير طبيعية</li><li>تغيّر واضح في شكل الكاحل</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <a href="tel:911" class="er-cta" style="margin-top:4px">
+      <div class="ec-icon">🚑</div>
+      <div class="ec-text"><strong>طوارئ 911</strong><span>اتصل أو اذهب لطوارئ ACH مباشرة</span></div>
+      <div class="ec-arr">←</div>
+    </a>
+  </div></div>
+
+  <!-- ── PAGE: EXERCISES ── -->
+  <div class="ppg" id="pp-ex"><div class="pwrap">
+    <div class="shero">
+      <div class="shero-icon">
+        <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=140&h=140&fit=crop&q=80" alt="exercise" onerror="this.parentNode.innerHTML='💪'">
+      </div>
+      <h2>تمارين التعافي</h2><p>ابدأ من اليوم الأول بعد العملية</p>
+    </div>
+
+    <div class="cbox cg" style="margin-bottom:14px">
+      <div class="cbox-ic">⏰</div>
+      <div class="cbox-bd"><h4>متى وكيف؟</h4>
+      <ul><li>من <strong>اليوم الأول</strong> بعد العملية</li><li><strong>3 مرات يومياً</strong> · 10–15 دقيقة</li><li>توقف فوراً عند ألم حاد أو تورم مفاجئ</li></ul></div>
+    </div>
+
+    <!-- Ex 1 -->
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="ex-num">١</div>
+        <div><div class="pc-title">تحريك الأصابع</div><div class="pc-sub">Toe Movements — من اليوم الأول</div></div>
+      </div>
+      <div class="pcb">
+        <div class="img-grid c2" style="margin-bottom:10px">
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1518611012118-696072aa579a?w=300&h=180&fit=crop&q=80" alt="toe flexion" onerror="this.style.display='none'">
+            <div class="ic-cap">ثني الأصابع<span>Toe Flexion</span></div>
+          </div>
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=300&h=180&fit=crop&q=80" alt="toe extension" onerror="this.style.display='none'">
+            <div class="ic-cap">بسط الأصابع<span>Toe Extension</span></div>
+          </div>
+        </div>
+        <div class="ex-pills"><span class="ep">🔁 10 مرات × 3 يومياً</span><span class="ep">📍 اليوم الأول</span></div>
+        <div class="rows">
+          <div class="row"><div class="bul g"></div><div>ثني وبسط جميع أصابع القدم ببطء — يحسّن الدورة الدموية</div></div>
+        </div>
+        <a href="https://www.youtube.com/results?search_query=toe+exercises+after+ankle+ORIF+surgery" target="_blank" class="vlink">
+          <div class="vplay">▶️</div><div class="vtxt"><strong>شاهد التمرين</strong><span>Toe exercises after ankle surgery</span></div><div class="varr">←</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Ex 2 -->
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="ex-num">٢</div>
+        <div><div class="pc-title">ضخ الكاحل</div><div class="pc-sub">Ankle Pumps — من اليوم الأول</div></div>
+      </div>
+      <div class="pcb">
+        <div class="img-grid c2" style="margin-bottom:10px">
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=300&h=180&fit=crop&q=80" alt="ankle dorsiflexion" onerror="this.style.display='none'">
+            <div class="ic-cap">شد للأعلى<span>Dorsiflexion</span></div>
+          </div>
+          <div class="img-card">
+            <img src="https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=300&h=180&fit=crop&q=80" alt="ankle plantarflexion" onerror="this.style.display='none'">
+            <div class="ic-cap">شد للأسفل<span>Plantarflexion</span></div>
+          </div>
+        </div>
+        <div class="ex-pills"><span class="ep">🔁 10 مرات × 3 يومياً</span><span class="ep">⏱️ 5 ثواني</span></div>
+        <div class="rows">
+          <div class="row"><div class="bul g"></div><div>شد أصابع القدم نحو الركبة ثم للأسفل ببطء — الأهم لمنع الجلطات</div></div>
+        </div>
+        <a href="https://www.youtube.com/results?search_query=ankle+pumps+post+surgery+rehabilitation" target="_blank" class="vlink">
+          <div class="vplay">▶️</div><div class="vtxt"><strong>شاهد التمرين</strong><span>Ankle pumps — post-operative</span></div><div class="varr">←</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Ex 3 -->
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="ex-num">٣</div>
+        <div><div class="pc-title">دوران الكاحل</div><div class="pc-sub">Ankle Circles — بعد إذن الطبيب</div></div>
+      </div>
+      <div class="pcb">
+        <div class="img-card" style="margin-bottom:10px">
+          <img src="https://images.unsplash.com/photo-1576678927484-cc907957088c?w=600&h=200&fit=crop&q=80" alt="ankle circles" onerror="this.style.display='none'">
+          <div class="ic-cap">دوائر بطيئة — يمين ويسار<span>Clockwise & counter-clockwise</span></div>
+        </div>
+        <div class="ex-pills"><span class="ep">🔁 10 دورات لكل اتجاه</span><span class="ep">📍 بعد الزيارة الأولى</span></div>
+        <div class="cbox ca" style="margin-top:8px;margin-bottom:12px">
+          <div class="cbox-ic">⚠️</div>
+          <div class="cbox-bd"><p>ابدأ فقط بعد <strong>إذن الطبيب</strong> في الزيارة الأولى</p></div>
+        </div>
+        <a href="https://www.youtube.com/results?search_query=ankle+circles+ROM+after+ORIF+surgery" target="_blank" class="vlink">
+          <div class="vplay">▶️</div><div class="vtxt"><strong>شاهد التمرين</strong><span>Ankle ROM exercises after ORIF</span></div><div class="varr">←</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Ex 4 -->
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="ex-num">٤</div>
+        <div><div class="pc-title">تمرين الربلة</div><div class="pc-sub">Calf Pumps — من اليوم الأول</div></div>
+      </div>
+      <div class="pcb">
+        <div class="img-card" style="margin-bottom:10px">
+          <img src="https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=600&h=200&fit=crop&q=80" alt="calf exercise" onerror="this.style.display='none'">
+          <div class="ic-cap">مد وثني الركبة ببطء<span>Calf Pump — منع الجلطات</span></div>
+        </div>
+        <div class="ex-pills"><span class="ep">🔁 15 مرة × 3 يومياً</span><span class="ep">📍 اليوم الأول</span></div>
+        <a href="https://www.youtube.com/results?search_query=calf+pump+exercises+post+operative+DVT" target="_blank" class="vlink">
+          <div class="vplay">▶️</div><div class="vtxt"><strong>شاهد التمرين</strong><span>Calf pump — DVT prevention</span></div><div class="varr">←</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Physio -->
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-g"><span>🏃</span></div>
+        <div><div class="pc-title">برنامج العلاج الطبيعي</div><div class="pc-sub">Full Physiotherapy — بعد 6 أسابيع</div></div>
+      </div>
+      <div class="pcb rows" style="margin-bottom:0">
+        <div class="row"><div class="bul"></div><div>يبدأ رسمياً <strong>بعد 6 أسابيع</strong> من العملية</div></div>
+        <div class="row"><div class="bul"></div><div>يحجز لك الطبيب في <strong>قسم الفيزيوثيرابي — ACH</strong></div></div>
+      </div>
+      <div class="pcb" style="padding-top:0">
+        <a href="https://www.youtube.com/results?search_query=ankle+ORIF+full+physiotherapy+rehabilitation+protocol" target="_blank" class="vlink">
+          <div class="vplay">▶️</div><div class="vtxt"><strong>برنامج فيزيوثيرابي كامل</strong><span>Ankle ORIF — 0 to 6 months</span></div><div class="varr">←</div>
+        </a>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- ── PAGE: MEDS ── -->
+  <div class="ppg" id="pp-meds"><div class="pwrap">
+    <div class="shero">
+      <div class="shero-icon">
+        <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=140&h=140&fit=crop&q=80" alt="medications" onerror="this.parentNode.innerHTML='💊'">
+      </div>
+      <h2>الأدوية الموصوفة</h2><p>خذها كما كتبها الطبيب تماماً</p>
+    </div>
+
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-n"><span>💊</span></div>
+        <div><div class="pc-title">وصفة الخروج</div><div class="pc-sub">Discharge Prescription</div></div>
+      </div>
+      <div class="pcb">
+        <div class="rx-display" id="rx-display">
+          <div class="rx-empty">جاري تحميل الوصفة...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-r"><span>⚠️</span></div>
+        <div><div class="pc-title">تحذيرات مهمة</div><div class="pc-sub">Medication Warnings</div></div>
+      </div>
+      <div class="pcb">
+        <div class="cbox cr" style="margin-bottom:10px">
+          <div class="cbox-ic">⚠️</div>
+          <div class="cbox-bd"><h4>لا تتوقف عن أي دواء بدون إذن طبيبك</h4>
+          <ul><li>أكمل الكورس الكامل كما وُصف</li><li>إذا نسيت جرعة — خذها حالاً ولا تضاعف</li><li>أخبر أي طبيب آخر بالأدوية التي تتناولها</li></ul></div>
+        </div>
+        <div class="cbox ct">
+          <div class="cbox-ic">🏥</div>
+          <div class="cbox-bd"><h4>استلم أدويتك قبل الخروج</h4>
+          <p>من صيدلية مستشفى عسير المركزي مباشرة</p></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- ── PAGE: FOLLOW-UP ── -->
+  <div class="ppg" id="pp-fu"><div class="pwrap">
+    <div class="shero">
+      <div class="shero-icon">
+        <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=140&h=140&fit=crop&q=80" alt="calendar" onerror="this.parentNode.innerHTML='📅'">
+      </div>
+      <h2>مواعيد المتابعة</h2><p>لا تتأخر — هذه المواعيد ضرورية</p>
+    </div>
+
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-t"><span>🗓️</span></div>
+        <div><div class="pc-title">الزيارات الثلاث</div><div class="pc-sub">Three Follow-up Visits</div></div>
+      </div>
+      <div class="pcb">
+        <div class="fu3">
+          <div class="fuc"><div class="fun">2</div><div class="fuu">أسابيع</div><div class="ful">الأولى</div><div class="fus">إزالة الغرز + أشعة</div></div>
+          <div class="fuc"><div class="fun">6</div><div class="fuu">أسابيع</div><div class="ful">الثانية</div><div class="fus">تقييم التحميل + أشعة</div></div>
+          <div class="fuc"><div class="fun">3</div><div class="fuu">أشهر</div><div class="ful">الثالثة</div><div class="fus">تقييم شامل + فيزيو</div></div>
+        </div>
+        <div class="rows">
+          <div class="row"><div class="bul"></div><div><strong>الأولى:</strong> إزالة الغرز، فحص الجرح، أشعة التثبيت</div></div>
+          <div class="row"><div class="bul"></div><div><strong>الثانية:</strong> أشعة الالتئام، البدء في التحميل</div></div>
+          <div class="row"><div class="bul"></div><div><strong>الثالثة:</strong> تقييم شامل، إحالة للعلاج الطبيعي</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pc-head">
+        <div class="pc-icon ico-t"><span>📲</span></div>
+        <div><div class="pc-title">أضف المواعيد لتقويمك</div><div class="pc-sub">Google Calendar</div></div>
+      </div>
+      <div class="pcb">
+        <div class="calsec">
+          <h4>📅 اختر تاريخ عمليتك:</h4>
+          <div class="cal-date-row">
+            <label>تاريخ العملية</label>
+            <input type="date" id="sdate" class="cal-inp">
+          </div>
+          <div>
+            <button class="calbtn cb1" onclick="addCal(14,'الزيارة الأولى — عيادة العظام ACH')">📅 الزيارة الأولى — أسبوعان</button>
+            <button class="calbtn cb2" onclick="addCal(42,'الزيارة الثانية — عيادة العظام ACH')">📅 الزيارة الثانية — 6 أسابيع</button>
+            <button class="calbtn cb3" onclick="addCal(90,'الزيارة الثالثة — عيادة العظام ACH')">📅 الزيارة الثالثة — 3 أشهر</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- ── PAGE: EMERGENCY ── -->
+  <div class="ppg" id="pp-er"><div class="pwrap">
+    <div class="shero">
+      <div class="shero-icon" style="background:#fff2f0">
+        <img src="https://images.unsplash.com/photo-1587745416684-47953f16f02f?w=140&h=140&fit=crop&q=80" alt="emergency" onerror="this.parentNode.innerHTML='🚨'">
+      </div>
+      <h2>الطوارئ</h2><p>في أي قلق — اذهب لطوارئ ACH فوراً</p>
+    </div>
+
+    <div class="pcard" style="border-color:#ffa8a0">
+      <div class="pc-head" style="background:#fff8f7;border-color:#fff0ee">
+        <div class="pc-icon ico-r"><span>🚨</span></div>
+        <div><div class="pc-title">طوارئ مستشفى عسير المركزي</div><div class="pc-sub">مفتوح 24 ساعة · 7 أيام</div></div>
+      </div>
+      <div class="pcb">
+        <div class="cbox cr" style="margin-bottom:16px">
+          <div class="cbox-ic">⚠️</div>
+          <div class="cbox-bd"><h4>اذهب فوراً للطوارئ إذا لاحظت:</h4>
+          <ul>
+            <li>ضيق تنفس مفاجئ أو ألم في الصدر</li>
+            <li>تورم مفاجئ في ساق واحدة</li>
+            <li>احمرار أو إفراز في الجرح مع حرارة</li>
+            <li>فقدان الإحساس في أصابع القدم</li>
+            <li>أي قلق على سلامتك</li>
+          </ul></div>
+        </div>
+        <a href="tel:911" class="er-cta" style="margin-bottom:12px">
+          <div class="ec-icon">🚑</div>
+          <div class="ec-text"><strong>طوارئ 911</strong><span>اتصل أو اذهب مباشرة</span></div>
+          <div class="ec-arr">←</div>
+        </a>
+        <div style="background:var(--bone);border-radius:var(--r-md);padding:14px 16px;border:1.5px solid var(--border);text-align:center">
+          <div style="font-size:14px;font-weight:800;color:var(--red)">طوارئ مستشفى عسير المركزي</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:3px">أبها · المملكة العربية السعودية</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doc note if present -->
+    <div id="doc-note-display" style="display:none">
+      <div class="pcard">
+        <div class="pc-head">
+          <div class="pc-icon ico-n"><span>📝</span></div>
+          <div><div class="pc-title">ملاحظة طبيبك</div><div class="pc-sub">Doctor's note</div></div>
+        </div>
+        <div class="pcb">
+          <div class="doc-note-display">
+            <div class="dnd-label">ملاحظة خاصة بك</div>
+            <div class="dnd-text" id="doc-note-text">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pat-footer">
+      <strong>مستشفى عسير المركزي</strong> · قسم جراحة العظام<br>
+      Aseer Central Hospital · Ortho ACH Research Group<br>
+      <span style="font-size:11px;opacity:.5">Smart Discharge System v4</span>
+    </div>
+  </div></div>
+
+</div><!-- /pat-page -->
+</div><!-- /v-patient -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══ STATE ══ */
+let _op = 'Ankle ORIF';
+let _meds = [];
+let _note = '';
+let _currentStep = 1;
+
+/* ══ DOCTOR: OP SELECT ══ */
+function selOp(btn, op, ar) {
+  document.querySelectorAll('.op-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  _op = op;
+}
+
+/* ══ DOCTOR: STEP NAV ══ */
+function nextStep(n) {
+  // hide all
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step3').style.display = 'none';
+  // show target
+  document.getElementById('step' + n).style.display = 'block';
+  _currentStep = n;
+  // update step indicator
+  updateStepInd(n);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (n === 3) buildQR();
+}
+
+function updateStepInd(n) {
+  ['sd1','sd2','sd3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = 'step-dot ' + (i+1 < n ? 'done' : i+1 === n ? 'active' : 'idle');
+  });
+  document.getElementById('sl12').className = 'step-line' + (n > 1 ? ' done' : '');
+  document.getElementById('sl23').className = 'step-line' + (n > 2 ? ' done' : '');
+}
+
+/* ══ BUILD QR ══ */
+function buildQR() {
+  // Collect meds
+  _meds = [];
+  for (let i = 0; i < 4; i++) {
+    const n = document.getElementById('m'+i+'n').value.trim();
+    const d = document.getElementById('m'+i+'d').value.trim();
+    const t = document.getElementById('m'+i+'t').value.trim();
+    if (n) _meds.push({ n, d, t });
+  }
+  _note = document.getElementById('doc-note').value.trim();
+
+  // Encode data into URL hash
+  const data = { op: _op, meds: _meds, note: _note };
+  const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
+  const url = window.location.href.split('#')[0] + '#patient:' + encoded;
+
+  document.getElementById('qr-op-name').textContent = _op;
+  document.getElementById('qr-url').textContent = url.length > 80 ? url.slice(0,80) + '...' : url;
+
+  // Generate QR using API
+  const box = document.getElementById('qr-box');
+  box.innerHTML = '';
+  const img = document.createElement('img');
+  img.style.cssText = 'width:100%;height:100%;display:block';
+  // Use qrserver API
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(url) + '&color=0b1f2e&bgcolor=ffffff&margin=2';
+  img.alt = 'QR Code';
+  img.onerror = function() {
+    // fallback to qr-code-generator
+    this.src = 'https://quickchart.io/qr?text=' + encodeURIComponent(url) + '&size=300&dark=0b1f2e&light=ffffff&margin=2';
+  };
+  box.appendChild(img);
+}
+
+/* ══ OPEN PATIENT (for preview from doctor page) ══ */
+function openPatient() {
+  const data = { op: _op, meds: _meds, note: _note };
+  const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
+  window.location.hash = 'patient:' + encoded;
+  loadPatient(data);
+}
+
+/* ══ LOAD PATIENT VIEW ══ */
+function loadPatient(data) {
+  document.getElementById('v-doctor').classList.remove('on');
+  document.getElementById('v-patient').classList.add('on');
+
+  // Set operation chip
+  document.getElementById('p-op-chip').textContent = '🦴 ' + data.op;
+
+  // Render medications
+  const rx = document.getElementById('rx-display');
+  if (data.meds && data.meds.length > 0) {
+    const nums = ['١','٢','٣','٤','٥'];
+    rx.innerHTML = data.meds.map((m, i) => `
+      <div class="rx-item">
+        <div class="ri-num">${nums[i]||i+1}</div>
+        <div class="ri-body">
+          <div class="ri-name">${esc(m.n)}</div>
+          ${m.d ? '<div class="ri-dose">'+esc(m.d)+'</div>' : ''}
+          ${m.t ? '<div class="ri-dur">المدة: '+esc(m.t)+'</div>' : ''}
+        </div>
+      </div>`).join('');
+  } else {
+    rx.innerHTML = '<div class="rx-empty">لم تُسجَّل أدوية بعد — راجع طاقم التمريض</div>';
+  }
+
+  // Doctor note
+  if (data.note) {
+    document.getElementById('doc-note-display').style.display = 'block';
+    document.getElementById('doc-note-text').textContent = data.note;
+  }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ══ ROUTER: check URL hash on load ══ */
+function route() {
+  const hash = window.location.hash;
+  if (hash.startsWith('#patient:')) {
+    try {
+      const encoded = hash.slice(9);
+      const data = JSON.parse(decodeURIComponent(atob(encoded)));
+      loadPatient(data);
+    } catch(e) {
+      // fallback — show patient with no meds
+      loadPatient({ op: 'Ankle ORIF', meds: [], note: '' });
+    }
+  } else {
+    // show doctor page
+    document.getElementById('v-doctor').classList.add('on');
+    document.getElementById('v-patient').classList.remove('on');
+  }
+}
+window.addEventListener('load', route);
+window.addEventListener('hashchange', route);
+
+/* ══ PATIENT: TAB SWITCH ══ */
+function ptab(id, btn) {
+  document.querySelectorAll('.ppg').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.ptab').forEach(t => t.classList.remove('on'));
+  document.getElementById('pp-' + id).classList.add('on');
+  btn.classList.add('on');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ══ CALENDAR ══ */
+function addCal(days, title) {
+  const v = document.getElementById('sdate').value;
+  if (!v) { toast('اختر تاريخ العملية أولاً 📅'); return; }
+  const d = new Date(v); d.setDate(d.getDate() + days);
+  const ds = d.toISOString().split('T')[0].replace(/-/g,'');
+  const t = encodeURIComponent(title);
+  const de = encodeURIComponent('موعد متابعة — قسم العظام، مستشفى عسير المركزي');
+  const lo = encodeURIComponent('مستشفى عسير المركزي، أبها');
+  window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${ds}/${ds}&details=${de}&location=${lo}\`,'_blank');
+}
+
+/* ══ TOAST ══ */
+function toast(m) {
+  const el = document.getElementById('toast');
+  el.textContent = m; el.classList.add('on');
+  setTimeout(() => el.classList.remove('on'), 2600);
+}
+</script>
+</body>
+</html>
